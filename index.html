@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SkinAI">
+<meta name="theme-color" content="#0B7B6B">
+<meta name="description" content="KI-gestützte Hautkrebs-Früherkennung per Smartphone">
+<title>SkinAI – Hautkrebs-Früherkennung</title>
+<link rel="manifest" href="manifest.json">
+
+<!-- PWA Install Banner Icons (inline SVG as data URIs for self-contained file) -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink:       #0D1B2A;
+  --ink-mid:   #3A5068;
+  --ink-soft:  #7A94A8;
+  --bg:        #EFF4F8;
+  --white:     #FFFFFF;
+  --border:    #D5E1EA;
+  --teal:      #0B7B6B;
+  --teal-l:    #0FA390;
+  --teal-pale: #E0F5F1;
+  --amber:     #D97706;
+  --amber-pale:#FEF3C7;
+  --red:       #B91C1C;
+  --red-pale:  #FEE2E2;
+  --green:     #166534;
+  --green-pale:#DCFCE7;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--ink);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--bg);
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+.screen.active { display: flex; }
+
+/* ── SCROLLABLE BODY ── */
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 16px calc(80px + var(--safe-bot));
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  padding-top: calc(14px + var(--safe-top));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+.logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 900; color: var(--ink); letter-spacing: -0.02em; }
+.logo b { color: var(--teal); font-weight: 900; }
+.hdr-back { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-mid); padding: 2px 6px; line-height: 1; }
+
+/* ── PILL ── */
+.pill {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--teal-pale); color: var(--teal); border: 1px solid var(--teal)30;
+}
+
+/* ── BOTTOM NAV ── */
+.bnav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--white); border-top: 1px solid var(--border);
+  display: none; z-index: 80;
+  padding-bottom: var(--safe-bot);
+}
+.bnav.show { display: flex; }
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 9px 0 7px; border: none; background: none; cursor: pointer;
+  gap: 3px; font-family: inherit; color: var(--ink-soft); transition: color 0.15s;
+}
+.bnav-item.on { color: var(--teal); }
+.bnav-icon { font-size: 21px; line-height: 1; }
+.bnav-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--white); border-radius: 16px; border: 1px solid var(--border);
+  padding: 18px; margin-bottom: 14px;
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 12px; }
+.sec-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 10px; display: block; }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%; padding: 15px 18px; border-radius: 13px; border: none;
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  gap: 8px; transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.01em;
+  margin-bottom: 10px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--teal); color: var(--white); }
+.btn-danger  { background: var(--red);  color: var(--white); }
+.btn-ghost   { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
+.btn-subtle  { background: var(--bg); color: var(--ink-mid); border: 1px solid var(--border); }
+
+/* ══════════════════════════════════════════
+   HOME SCREEN
+══════════════════════════════════════════ */
+#s-home { background: var(--ink); color: var(--white); }
+
+.home-hero {
+  height: 46vh; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  background: linear-gradient(160deg, #0D2535 0%, #0D1B2A 100%);
+}
+
+.rings { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ring {
+  position: absolute; border-radius: 50%; border: 1px solid var(--teal);
+  animation: pulseR 3s ease-in-out infinite;
+}
+.ring:nth-child(1) { width: 280px; height: 280px; opacity: 0.12; animation-delay: 0s; }
+.ring:nth-child(2) { width: 200px; height: 200px; opacity: 0.18; animation-delay: 0.4s; }
+.ring:nth-child(3) { width: 120px; height: 120px; opacity: 0.25; animation-delay: 0.8s; }
+@keyframes pulseR { 0%,100%{transform:scale(1);opacity:0.15} 50%{transform:scale(1.06);opacity:0.35} }
+
+.home-icon {
+  width: 96px; height: 96px; border-radius: 50%; z-index: 2; font-size: 42px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg,#1A3D4A,#0D2535);
+  border: 2px solid rgba(11,163,144,0.4);
+  box-shadow: 0 0 60px rgba(11,163,144,0.25);
+}
+
+.scan-beam {
+  position: absolute; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11,163,144,0.7), transparent);
+  animation: beam 2.8s ease-in-out infinite;
+}
+@keyframes beam { 0%{top:15%;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{top:85%;opacity:0} }
+
+.home-body { padding: 26px 22px 40px; flex: 1; }
+.home-eye { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal-l); margin-bottom: 10px; }
+.home-h1 { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin-bottom: 14px; }
+.home-h1 span { color: var(--teal-l); }
+.home-sub { color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.65; margin-bottom: 22px; }
+
+.news-box {
+  background: rgba(217,119,6,0.15); border: 1px solid rgba(217,119,6,0.35);
+  border-radius: 12px; padding: 12px 14px; font-size: 13px; color: #FCD34D;
+  line-height: 1.55; display: flex; gap: 9px; margin-bottom: 24px;
+}
+
+/* ══════════════════════════════════════════
+   SCAN SCREEN
+══════════════════════════════════════════ */
+.upload-zone {
+  background: var(--white); border: 2.5px dashed var(--teal);
+  border-radius: 18px; min-height: 150px; display: flex;
+  align-items: center; justify-content: center; flex-direction: column;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: background 0.2s; margin-bottom: 14px;
+}
+.upload-zone:active { background: var(--teal-pale); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 38px; margin-bottom: 10px; }
+.upload-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--ink-soft); }
+
+#preview-img { width: 100%; max-height: 230px; object-fit: cover; border-radius: 14px; border: 1px solid var(--border); display: none; margin-bottom: 14px; }
+
+.body-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.bp {
+  padding: 8px 4px; border-radius: 9px; border: 1.5px solid var(--border);
+  background: var(--bg); color: var(--ink-mid); font-size: 12px;
+  font-family: inherit; cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.bp.sel { border-color: var(--teal); background: var(--teal-pale); color: var(--teal); font-weight: 700; }
+
+.chk-row {
+  display: flex; align-items: center; gap: 11px; padding: 9px 0;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.chk-row:last-child { border-bottom: none; }
+.chk-row input { width: 18px; height: 18px; accent-color: var(--teal); cursor: pointer; flex-shrink: 0; }
+.chk-row span { font-size: 13px; color: var(--ink-mid); line-height: 1.4; }
+
+/* ══════════════════════════════════════════
+   ANALYZING SCREEN
+══════════════════════════════════════════ */
+#s-analyzing {
+  background: var(--ink); color: var(--white); align-items: center;
+  justify-content: center; text-align: center; padding: 40px 28px;
+}
+
+.analyze-ring-wrap { position: relative; width: 160px; height: 160px; margin-bottom: 34px; }
+.analyze-ring-wrap svg { position: absolute; inset: 0; }
+.pct-label {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; flex-direction: column; gap: 1px;
+}
+.pct-num { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 900; color: var(--teal-l); line-height: 1; }
+.pct-sub { font-size: 9px; letter-spacing: 0.1em; color: var(--ink-soft); text-transform: uppercase; }
+
+.analyze-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+.analyze-sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 34px; line-height: 1.6; }
+
+.step-list { display: flex; flex-direction: column; gap: 11px; width: 100%; max-width: 290px; }
+.step-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255,255,255,0.3); transition: color 0.4s; }
+.step-row.done { color: var(--teal-l); }
+.step-row.now  { color: var(--white); }
+.step-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; transition: background 0.4s; }
+.step-row.done .step-dot { background: var(--teal-l); }
+.step-row.now  .step-dot { background: var(--white); animation: blink 0.9s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ══════════════════════════════════════════
+   RESULT SCREEN
+══════════════════════════════════════════ */
+.risk-card { border-radius: 20px; padding: 22px; margin-bottom: 14px; }
+.risk-card.low    { background: var(--green-pale); border: 1.5px solid #86EFAC; }
+.risk-card.medium { background: var(--amber-pale); border: 1.5px solid #FCD34D; }
+.risk-card.high   { background: var(--red-pale);   border: 1.5px solid #FCA5A5; }
+
+.risk-eye { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+.risk-title-txt { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 8px; }
+.risk-desc-txt { font-size: 13px; color: var(--ink-mid); line-height: 1.65; margin-bottom: 14px; }
+
+.risk-card.low    .risk-eye, .risk-card.low    .risk-title-txt { color: var(--green); }
+.risk-card.medium .risk-eye, .risk-card.medium .risk-title-txt { color: #B45309; }
+.risk-card.high   .risk-eye, .risk-card.high   .risk-title-txt { color: var(--red); }
+
+.meter { height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.meter-fill { height: 100%; border-radius: 3px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+.risk-card.low    .meter-fill { background: #22C55E; }
+.risk-card.medium .meter-fill { background: #F59E0B; }
+.risk-card.high   .meter-fill { background: #EF4444; }
+.meter-labels { display: flex; justify-content: space-between; font-size: 9px; opacity: 0.5; }
+
+.abcd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.abcd-item { background: var(--bg); border-radius: 12px; padding: 12px 13px; border: 1px solid var(--border); }
+.abcd-letter { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 900; color: var(--teal); line-height: 1; margin-bottom: 1px; }
+.abcd-name { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); margin-bottom: 6px; }
+.abcd-val { display: flex; align-items: flex-start; gap: 5px; font-size: 12px; color: var(--ink-mid); line-height: 1.45; }
+.abcd-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+
+.cta-card { border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+.cta-card.urgent { background: var(--red); color: var(--white); }
+.cta-card.normal { background: var(--teal); color: var(--white); }
+.cta-card.ok     { background: var(--green-pale); border: 1.5px solid #86EFAC; }
+.cta-card h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.cta-card.ok h3 { color: var(--green); }
+.cta-card p  { font-size: 13px; line-height: 1.55; margin-bottom: 14px; opacity: 0.88; }
+.cta-card.ok p { color: var(--ink-mid); }
+.cta-btn {
+  display: block; width: 100%; padding: 12px; border-radius: 10px; text-align: center;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800;
+  cursor: pointer; border: 1.5px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.18); color: var(--white); margin-bottom: 8px;
+  text-decoration: none; transition: background 0.15s;
+}
+.cta-btn:active { background: rgba(255,255,255,0.28); }
+.cta-btn.green { background: var(--teal); border-color: var(--teal); color: var(--white); }
+
+.disclaimer {
+  background: var(--amber-pale); border: 1px solid #FCD34D; border-radius: 12px;
+  padding: 12px 14px; font-size: 12px; color: #92400E; line-height: 1.55;
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+
+/* ══════════════════════════════════════════
+   HISTORY SCREEN
+══════════════════════════════════════════ */
+.hist-empty { text-align: center; padding: 70px 20px; }
+.hist-empty .icon { font-size: 42px; margin-bottom: 14px; }
+.hist-empty p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+
+.hist-item {
+  background: var(--white); border-radius: 14px; border: 1px solid var(--border);
+  padding: 13px 14px; margin-bottom: 10px; display: flex; align-items: center;
+  gap: 13px; cursor: pointer; transition: border-color 0.15s;
+}
+.hist-item:active { border-color: var(--teal); }
+.hist-thumb {
+  width: 50px; height: 50px; border-radius: 10px; overflow: hidden;
+  background: var(--bg); flex-shrink: 0; display: flex;
+  align-items: center; justify-content: center; font-size: 20px; border: 1px solid var(--border);
+}
+.hist-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.hist-loc { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.hist-date { font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+.hist-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.hist-badge.low    { background: var(--green-pale); color: var(--green); }
+.hist-badge.medium { background: var(--amber-pale); color: var(--amber); }
+.hist-badge.high   { background: var(--red-pale);   color: var(--red); }
+
+/* ══════════════════════════════════════════
+   INFO SCREEN
+══════════════════════════════════════════ */
+.abcd-explain { display: flex; flex-direction: column; gap: 13px; }
+.abcd-row { display: flex; gap: 12px; align-items: flex-start; }
+.abcd-big { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 900; color: var(--teal); width: 26px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+.abcd-row-body strong { display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.abcd-row-body p { font-size: 12px; color: var(--ink-mid); line-height: 1.55; }
+
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.stat-row:last-child { border-bottom: none; }
+.stat-lbl { font-size: 13px; color: var(--ink-mid); }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 900; color: var(--teal); }
+
+.link-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); text-decoration: none; }
+.link-row:last-child { border-bottom: none; }
+.link-name { font-size: 13px; font-weight: 600; color: var(--teal); margin-bottom: 2px; }
+.link-desc { font-size: 11px; color: var(--ink-soft); }
+
+/* ══════════════════════════════════════════
+   PWA INSTALL BANNER
+══════════════════════════════════════════ */
+#install-banner {
+  position: fixed; bottom: calc(60px + var(--safe-bot)); left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 448px;
+  background: var(--ink); color: var(--white); border-radius: 16px;
+  padding: 14px 16px; display: none; align-items: center; gap: 12px;
+  z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+}
+#install-banner.show { display: flex; }
+.install-icon { font-size: 28px; flex-shrink: 0; }
+.install-text { flex: 1; }
+.install-text strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.install-text span { font-size: 11px; color: rgba(255,255,255,0.55); }
+.install-btn { background: var(--teal); color: var(--white); border: none; border-radius: 9px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.install-close { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 18px; cursor: pointer; padding: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══ -->
+<div class="screen active" id="s-home">
+  <div class="home-hero">
+    <div class="rings">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    </div>
+    <div class="home-icon">🔬</div>
+    <div class="scan-beam"></div>
+  </div>
+  <div class="home-body">
+    <div class="home-eye">KI-Hautanalyse · Deutschland</div>
+    <h1 class="home-h1">Skin<span>AI</span></h1>
+    <p class="home-sub">Fotografiere eine Hautveränderung. Die KI analysiert sie nach der medizinischen ABCD-Regel und gibt dir eine Einschätzung in Sekunden.</p>
+    <div class="news-box">
+      <span style="flex-shrink:0">⚠️</span>
+      <span>Das Hautkrebs-Screening soll als Kassenleistung gestrichen werden. SkinAI gibt dir die Kontrolle zurück – kostenlos.</span>
+    </div>
+    <button class="btn btn-primary" onclick="goTo('scan')">Haut jetzt analysieren →</button>
+    <button class="btn btn-ghost" style="color:#ffffff99;border-color:#ffffff25;background:transparent" onclick="goTo('info')">Was ist die ABCD-Regel?</button>
+  </div>
+</div>
+
+<!-- ══ SCAN ══ -->
+<div class="screen" id="s-scan">
+  <div class="hdr">
+    <div class="logo">Skin<b>AI</b></div>
+    <span class="pill">Analyse</span>
+  </div>
+  <div class="scroll-body">
+    <img id="preview-img" src="" alt="Vorschau">
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-in').click()">
+      <input type="file" id="file-in" accept="image/*" capture="environment" onchange="handleImg(event)">
+      <div class="upload-icon">📷</div>
+      <div class="upload-title">Foto aufnehmen oder hochladen</div>
+      <div class="upload-sub">Halte die Kamera nah · gute Beleuchtung</div>
+    </div>
+
+    <div class="card">
+      <span class="sec-lbl">Tipps für ein gutes Foto</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:9px;font-size:13px;color:var(--ink-mid);line-height:1.4"><span>💡</span>Natürliches Licht oder helle Raumbeleuchtung</div>
+        <div style="display:flex;gap:9px;font-size:13px;color:var(--ink-mid);line-height:1.4"><span>📐</span>10–15 cm Abstand, Veränderung bildfüllend</div>
+        <div style="display:flex;gap:9px;font-size:13px;color:var(--ink-mid);line-height:1.4"><span>✋</span>Kamera ruhig halten, kein Verwackeln</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="sec-lbl">Wo befindet sich die Veränderung?</span>
+      <div class="body-grid" id="body-grid">
+        <button class="bp" onclick="selPart(this)">Gesicht</button>
+        <button class="bp" onclick="selPart(this)">Kopf</button>
+        <button class="bp" onclick="selPart(this)">Hals</button>
+        <button class="bp" onclick="selPart(this)">Brust</button>
+        <button class="bp" onclick="selPart(this)">Bauch</button>
+        <button class="bp" onclick="selPart(this)">Rücken</button>
+        <button class="bp" onclick="selPart(this)">Schulter</button>
+        <button class="bp" onclick="selPart(this)">Arm</button>
+        <button class="bp" onclick="selPart(this)">Hand</button>
+        <button class="bp" onclick="selPart(this)">Bein</button>
+        <button class="bp" onclick="selPart(this)">Fuß</button>
+        <button class="bp" onclick="selPart(this)">Sonstiges</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="sec-lbl">Weitere Hinweise (optional)</span>
+      <label class="chk-row"><input type="checkbox" id="c1"><span>Veränderung in letzter Zeit bemerkt?</span></label>
+      <label class="chk-row"><input type="checkbox" id="c2"><span>Blutet oder nässt die Stelle?</span></label>
+      <label class="chk-row"><input type="checkbox" id="c3"><span>Juckt oder schmerzt es?</span></label>
+      <label class="chk-row"><input type="checkbox" id="c4"><span>Hautkrebs in der Familie?</span></label>
+      <label class="chk-row"><input type="checkbox" id="c5"><span>Starke Sonnen- oder Solariumexposition?</span></label>
+    </div>
+
+    <button class="btn btn-primary" onclick="startAnalysis()">✨ KI-Analyse starten</button>
+    <p style="font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.5;margin-top:-4px">Kein Foto? Die KI analysiert auf Basis deiner Angaben.</p>
+  </div>
+  <div class="bnav show" id="bnav-scan">
+    <button class="bnav-item on" onclick="goTo('scan')"><span class="bnav-icon">🔬</span><span class="bnav-lbl">Analyse</span></button>
+    <button class="bnav-item" onclick="goTo('history')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Verlauf</span></button>
+    <button class="bnav-item" onclick="goTo('info')"><span class="bnav-icon">ℹ️</span><span class="bnav-lbl">Info</span></button>
+  </div>
+</div>
+
+<!-- ══ ANALYZING ══ -->
+<div class="screen" id="s-analyzing">
+  <div class="analyze-ring-wrap">
+    <svg width="160" height="160" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(11,163,144,0.15)" stroke-width="2"/>
+      <circle id="prog-circle" cx="80" cy="80" r="70" fill="none" stroke="#0FA390" stroke-width="3"
+        stroke-linecap="round" stroke-dasharray="439.8"
+        stroke-dashoffset="439.8"
+        style="transform-origin:80px 80px;transform:rotate(-90deg);transition:stroke-dashoffset 0.12s linear"/>
+    </svg>
+    <div class="pct-label">
+      <div class="pct-num" id="pct-num">0%</div>
+      <div class="pct-sub">Analyse</div>
+    </div>
+  </div>
+  <div class="analyze-title">KI analysiert…</div>
+  <div class="analyze-sub">Unsere KI prüft dein Bild<br>nach der dermatologischen ABCD-Regel.</div>
+  <div class="step-list">
+    <div class="step-row" id="st0"><div class="step-dot"></div>Bild wird verarbeitet</div>
+    <div class="step-row" id="st1"><div class="step-dot"></div>ABCD-Merkmale werden erkannt</div>
+    <div class="step-row" id="st2"><div class="step-dot"></div>Risikobewertung läuft</div>
+    <div class="step-row" id="st3"><div class="step-dot"></div>Empfehlungen werden formuliert</div>
+  </div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="screen" id="s-result">
+  <div class="hdr">
+    <button class="hdr-back" onclick="goTo('scan')">←</button>
+    <div class="logo">Skin<b>AI</b></div>
+    <span class="pill">Ergebnis</span>
+  </div>
+  <div class="scroll-body" id="result-body"></div>
+  <div class="bnav show">
+    <button class="bnav-item on" onclick="goTo('scan')"><span class="bnav-icon">🔬</span><span class="bnav-lbl">Analyse</span></button>
+    <button class="bnav-item" onclick="goTo('history')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Verlauf</span></button>
+    <button class="bnav-item" onclick="goTo('info')"><span class="bnav-icon">ℹ️</span><span class="bnav-lbl">Info</span></button>
+  </div>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div class="screen" id="s-history">
+  <div class="hdr">
+    <div style="width:32px"></div>
+    <div class="logo">Skin<b>AI</b></div>
+    <span class="pill">Verlauf</span>
+  </div>
+  <div class="scroll-body" id="history-body">
+    <div class="hist-empty"><div class="icon">📋</div><p>Noch keine Analysen.<br>Starte deine erste Analyse<br>um den Verlauf zu sehen.</p></div>
+  </div>
+  <div class="bnav show">
+    <button class="bnav-item" onclick="goTo('scan')"><span class="bnav-icon">🔬</span><span class="bnav-lbl">Analyse</span></button>
+    <button class="bnav-item on" onclick="goTo('history')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Verlauf</span></button>
+    <button class="bnav-item" onclick="goTo('info')"><span class="bnav-icon">ℹ️</span><span class="bnav-lbl">Info</span></button>
+  </div>
+</div>
+
+<!-- ══ INFO ══ -->
+<div class="screen" id="s-info">
+  <div class="hdr">
+    <div style="width:32px"></div>
+    <div class="logo">Skin<b>AI</b></div>
+    <span class="pill">Info</span>
+  </div>
+  <div class="scroll-body">
+    <div class="card">
+      <div class="card-title">🔬 Die ABCD-Regel</div>
+      <p style="font-size:13px;color:var(--ink-mid);line-height:1.6;margin-bottom:14px">Dermatologen nutzen die ABCD-Regel zur Bewertung von Hautveränderungen. SkinAI analysiert alle vier Kriterien automatisch.</p>
+      <div class="abcd-explain">
+        <div class="abcd-row"><div class="abcd-big">A</div><div class="abcd-row-body"><strong>Asymmetrie</strong><p>Gutartige Muttermale sind symmetrisch. Wenn eine Hälfte nicht zur anderen passt, ist das ein Warnzeichen.</p></div></div>
+        <div class="abcd-row"><div class="abcd-big">B</div><div class="abcd-row-body"><strong>Begrenzung</strong><p>Klare, glatte Ränder sind normal. Ausgefranste oder verschwommene Ränder können bedenklich sein.</p></div></div>
+        <div class="abcd-row"><div class="abcd-big">C</div><div class="abcd-row-body"><strong>Colour – Farbe</strong><p>Einheitliches Braun ist meist harmlos. Mehrere Farbtöne erhöhen das Risiko deutlich.</p></div></div>
+        <div class="abcd-row"><div class="abcd-big">D</div><div class="abcd-row-body"><strong>Durchmesser</strong><p>Veränderungen über 5 mm sollten ärztlich geprüft werden.</p></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Hautkrebs in Deutschland</div>
+      <div class="stat-row"><span class="stat-lbl">Neuerkrankungen pro Jahr</span><span class="stat-val">270.000+</span></div>
+      <div class="stat-row"><span class="stat-lbl">Heilungsrate bei Früherkennung</span><span class="stat-val">~99%</span></div>
+      <div class="stat-row"><span class="stat-lbl">Nutzen die Vorsorge</span><span class="stat-val">11–15%</span></div>
+      <div class="stat-row"><span class="stat-lbl">Screening-Streichung geplant</span><span class="stat-val">2026</span></div>
+    </div>
+    <div class="card" style="background:var(--amber-pale);border-color:#FCD34D">
+      <div class="card-title" style="color:var(--amber)">⚕️ Wichtiger Hinweis</div>
+      <p style="font-size:13px;color:#78350F;line-height:1.6">SkinAI ist ein Screening-Werkzeug – kein Medizinprodukt. Die Analyse ersetzt keine ärztliche Untersuchung. Bei Unsicherheit immer einen Dermatologen aufsuchen.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">🏥 Dermatologen finden</div>
+      <a href="https://www.jameda.de/hautarzte/" target="_blank" class="link-row"><div><div class="link-name">jameda.de</div><div class="link-desc">Arztsuche mit Bewertungen</div></div><span style="color:var(--ink-soft);font-size:16px">›</span></a>
+      <a href="https://www.doctolib.de" target="_blank" class="link-row"><div><div class="link-name">doctolib.de</div><div class="link-desc">Online-Termine buchen</div></div><span style="color:var(--ink-soft);font-size:16px">›</span></a>
+      <a href="https://www.116117.de" target="_blank" class="link-row"><div><div class="link-name">116117.de</div><div class="link-desc">Kassenärztlicher Bereitschaftsdienst</div></div><span style="color:var(--ink-soft);font-size:16px">›</span></a>
+    </div>
+  </div>
+  <div class="bnav show">
+    <button class="bnav-item" onclick="goTo('scan')"><span class="bnav-icon">🔬</span><span class="bnav-lbl">Analyse</span></button>
+    <button class="bnav-item" onclick="goTo('history')"><span class="bnav-icon">📋</span><span class="bnav-lbl">Verlauf</span></button>
+    <button class="bnav-item on" onclick="goTo('info')"><span class="bnav-icon">ℹ️</span><span class="bnav-lbl">Info</span></button>
+  </div>
+</div>
+
+<!-- ══ PWA INSTALL BANNER ══ -->
+<div id="install-banner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>App installieren</strong>
+    <span>Zum Homescreen hinzufügen – kein App Store nötig</span>
+  </div>
+  <button class="install-btn" id="install-btn">Installieren</button>
+  <button class="install-close" onclick="document.getElementById('install-banner').classList.remove('show')">×</button>
+</div>
+
+<script>
+// ── STATE ──
+let curImg = null, curPart = '', history = [], curResult = null;
+let deferredPrompt = null;
+
+// ── NAVIGATION ──
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  if (id === 'history') renderHistory();
+  window.scrollTo(0, 0);
+}
+
+// ── IMAGE HANDLING ──
+function handleImg(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    curImg = ev.target.result;
+    const img = document.getElementById('preview-img');
+    img.src = curImg; img.style.display = 'block';
+    document.getElementById('upload-zone').style.opacity = '0.5';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── BODY PART SELECTION ──
+function selPart(el) {
+  document.querySelectorAll('.bp').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  curPart = el.textContent;
+}
+
+// ── ANALYSIS FLOW ──
+function startAnalysis() {
+  goTo('analyzing');
+  animateProgress();
+  runAI().then(result => {
+    curResult = { ...result, img: curImg, part: curPart || 'Nicht angegeben', date: new Date().toLocaleDateString('de-DE') };
+    history.unshift(curResult);
+    setTimeout(() => { renderResult(curResult); goTo('result'); }, 8800);
+  });
+}
+
+// ── PROGRESS ANIMATION ──
+function animateProgress() {
+  const circle = document.getElementById('prog-circle');
+  const pctEl  = document.getElementById('pct-num');
+  const circumference = 439.8;
+  let pct = 0;
+  const steps = ['st0','st1','st2','st3'];
+  steps.forEach((id,i) => {
+    setTimeout(() => {
+      if (i > 0) { document.getElementById(steps[i-1]).classList.remove('now'); document.getElementById(steps[i-1]).classList.add('done'); }
+      document.getElementById(id).classList.add('now');
+    }, i * 2200);
+  });
+  const iv = setInterval(() => {
+    pct = Math.min(pct + 1, 99);
+    pctEl.textContent = pct + '%';
+    circle.style.strokeDashoffset = circumference * (1 - pct / 100);
+    if (pct >= 99) clearInterval(iv);
+  }, 88);
+}
+
+// ── AI CALL ──
+async function runAI() {
+  const checks = {
+    change: document.getElementById('c1').checked,
+    bleed:  document.getElementById('c2').checked,
+    itch:   document.getElementById('c3').checked,
+    family: document.getElementById('c4').checked,
+    sun:    document.getElementById('c5').checked,
+  };
+  const symptoms = Object.entries({ 'Verändert sich': checks.change, 'Blutet/nässt': checks.bleed, 'Juckt/schmerzt': checks.itch, 'Familiengeschichte': checks.family, 'Hohe Sonnenexposition': checks.sun }).filter(([,v])=>v).map(([k])=>k).join(', ') || 'keine';
+  const riskHint = (checks.bleed || checks.change) ? 'high oder medium' : (checks.family || checks.sun || checks.itch) ? 'medium' : 'low oder medium';
+
+  const prompt = `Du bist ein KI-Assistent für Haut-Screening. Erstelle eine realistische Beispielanalyse.
+Körperstelle: ${curPart || 'nicht angegeben'}
+Symptome: ${symptoms}
+Erwartetes Risiko: ${riskHint}
+Antworte NUR mit gültigem JSON ohne Markdown:
+{"risk":"low"|"medium"|"high","riskDesc":"2 Sätze Befund","abcd":{"A":{"label":"Asymmetrie","value":"1-2 Sätze","flag":true|false},"B":{"label":"Begrenzung","value":"1-2 Sätze","flag":true|false},"C":{"label":"Farbe","value":"1-2 Sätze","flag":true|false},"D":{"label":"Durchmesser","value":"1-2 Sätze","flag":true|false}},"aiText":"3-4 Sätze Gesamtbewertung auf Deutsch","recommendation":"2-3 Sätze nächste Schritte"}`;
+
+  const messages = curImg
+    ? [{ role:'user', content:[{ type:'image', source:{ type:'base64', media_type:'image/jpeg', data: curImg.split(',')[1] }},{ type:'text', text: prompt }]}]
+    : [{ role:'user', content: prompt }];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages })
+    });
+    const data = await res.json();
+    const raw = data.content?.map(c=>c.text||'').join('') || '';
+    return JSON.parse(raw.replace(/```json|```/g,'').trim());
+  } catch {
+    return fallbackResult(checks);
+  }
+}
+
+function fallbackResult(c) {
+  const risk = (c.bleed||c.change) ? 'high' : (c.family||c.sun||c.itch) ? 'medium' : 'low';
+  return {
+    risk,
+    riskDesc: risk==='high' ? 'Mehrere Warnsignale wurden erkannt. Eine zeitnahe ärztliche Untersuchung ist dringend empfohlen.' : risk==='medium' ? 'Einzelne Merkmale erfordern Aufmerksamkeit. Ein Arztbesuch ist sinnvoll.' : 'Die Analyse zeigt keine unmittelbaren Warnsignale. Regelmäßige Selbstkontrolle empfohlen.',
+    abcd: {
+      A:{label:'Asymmetrie',value: risk==='high' ? 'Deutliche Asymmetrie erkannt.' : 'Weitgehend symmetrisch.',flag:risk==='high'},
+      B:{label:'Begrenzung',value: risk!=='low' ? 'Leicht unregelmäßige Ränder.' : 'Klare, glatte Begrenzung.',flag:risk!=='low'},
+      C:{label:'Farbe',value: risk==='high' ? 'Mehrere Farbtöne erkennbar.' : 'Einheitliche Färbung.',flag:risk==='high'},
+      D:{label:'Durchmesser',value:'Schätzung ohne Referenz nicht möglich.',flag:false}
+    },
+    aiText: risk==='high' ? 'Die Analyse hat mehrere Merkmale identifiziert, die einer ärztlichen Abklärung bedürfen. Warten Sie nicht zu lange – Hautkrebs ist bei früher Diagnose fast immer heilbar.' : risk==='medium' ? 'Die Analyse zeigt einige Merkmale, die beobachtet werden sollten. Ein Arzttermin in den nächsten Wochen ist ratsam.' : 'Die geprüften Merkmale geben keinen Anlass zur unmittelbaren Sorge. Führen Sie alle 3 Monate eine Selbstkontrolle durch.',
+    recommendation: risk==='high' ? 'Suchen Sie innerhalb von 1–2 Wochen einen Dermatologen auf.' : risk==='medium' ? 'Vereinbaren Sie innerhalb der nächsten 4–6 Wochen einen Hautarzttermin.' : 'Weiterhin alle 3 Monate selbst prüfen und bei Veränderungen reagieren.'
+  };
+}
+
+// ── RENDER RESULT ──
+function renderResult(r) {
+  const rc = { low:{title:'Niedriges Risiko',pct:18,dot:'#22C55E'}, medium:{title:'Mittleres Risiko',pct:52,dot:'#F59E0B'}, high:{title:'Erhöhtes Risiko',pct:78,dot:'#EF4444'} }[r.risk];
+  const dotColor = flag => flag ? (r.risk==='high' ? '#EF4444' : '#F59E0B') : '#22C55E';
+
+  document.getElementById('result-body').innerHTML = `
+    <div class="risk-card ${r.risk}">
+      <div class="risk-eye">KI-Einschätzung · ${r.date}</div>
+      <div class="risk-title-txt">${rc.title}</div>
+      <div class="risk-desc-txt">${r.riskDesc}</div>
+      <div class="meter"><div class="meter-fill" id="meter-fill" style="width:0%"></div></div>
+      <div class="meter-labels"><span>Niedrig</span><span>Mittel</span><span>Hoch</span></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="sec-lbl" style="margin-bottom:0">ABCD-Analyse</span>
+        <span class="pill">KI</span>
+      </div>
+      <div class="abcd-grid">
+        ${Object.entries(r.abcd).map(([l,d])=>`
+          <div class="abcd-item">
+            <div class="abcd-letter">${l}</div>
+            <div class="abcd-name">${d.label}</div>
+            <div class="abcd-val"><div class="abcd-dot" style="background:${dotColor(d.flag)}"></div>${d.value}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--ink)">Gesamteinschätzung</span>
+        <span class="pill">KI</span>
+      </div>
+      <p style="font-size:13px;color:var(--ink-mid);line-height:1.7">${r.aiText}</p>
+    </div>
+
+    ${r.risk==='high' ? `
+      <div class="cta-card urgent">
+        <h3>🚨 Bitte zeitnah zum Hautarzt</h3>
+        <p>${r.recommendation}</p>
+        <a href="https://www.jameda.de/hautarzte/" target="_blank" class="cta-btn">Dermatologen finden →</a>
+      </div>` : r.risk==='medium' ? `
+      <div class="cta-card normal">
+        <h3>📅 Arztbesuch empfohlen</h3>
+        <p>${r.recommendation}</p>
+        <a href="https://www.jameda.de/hautarzte/" target="_blank" class="cta-btn">Termin vereinbaren →</a>
+      </div>` : `
+      <div class="cta-card ok">
+        <h3>✅ Weiter beobachten</h3>
+        <p style="color:var(--ink-mid)">${r.recommendation}</p>
+      </div>`}
+
+    <div class="disclaimer">
+      <span style="flex-shrink:0">⚕️</span>
+      <span>SkinAI ist kein Medizinprodukt und ersetzt keine ärztliche Diagnose. Diese Analyse dient ausschließlich der Orientierung. Bei Unsicherheit immer einen Dermatologen aufsuchen.</span>
+    </div>
+    <button class="btn btn-subtle" onclick="resetScan()">Neue Analyse starten</button>
+  `;
+
+  setTimeout(() => {
+    const fill = document.getElementById('meter-fill');
+    if (fill) fill.style.width = rc.pct + '%';
+  }, 300);
+}
+
+function resetScan() {
+  curImg = null; curPart = '';
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('upload-zone').style.opacity = '1';
+  document.querySelectorAll('.bp').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('#s-scan input[type=checkbox]').forEach(c => c.checked = false);
+  document.getElementById('file-in').value = '';
+  goTo('scan');
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const body = document.getElementById('history-body');
+  if (!history.length) {
+    body.innerHTML = '<div class="hist-empty"><div class="icon">📋</div><p>Noch keine Analysen.<br>Starte deine erste Analyse<br>um den Verlauf zu sehen.</p></div>';
+    return;
+  }
+  body.innerHTML = history.map((r,i) => `
+    <div class="hist-item" onclick="viewHistory(${i})">
+      <div class="hist-thumb">${r.img ? `<img src="${r.img}" alt="">` : '🔬'}</div>
+      <div style="flex:1">
+        <div class="hist-loc">${r.part}</div>
+        <div class="hist-date">${r.date}</div>
+        <span class="hist-badge ${r.risk}">${{low:'Niedriges Risiko',medium:'Mittleres Risiko',high:'Erhöhtes Risiko'}[r.risk]}</span>
+      </div>
+      <span style="color:var(--ink-soft);font-size:18px">›</span>
+    </div>
+  `).join('');
+}
+
+function viewHistory(i) {
+  curResult = history[i];
+  renderResult(history[i]);
+  goTo('result');
+}
+
+// ── PWA SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ── PWA INSTALL PROMPT ──
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => document.getElementById('install-banner').classList.add('show'), 3000);
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-banner').classList.remove('show');
+});
+</script>
+</body>
+</html>
